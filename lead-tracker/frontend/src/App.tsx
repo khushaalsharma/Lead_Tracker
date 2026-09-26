@@ -3,7 +3,7 @@ import LeadForm from "./components/LeadForm";
 import LeadList from "./components/LeadList";
 import LeadSearch from "./components/LeadSearch";
 import { createLead, fetchLeads, updateLeadStatus } from "./api/leadApi";
-import { CreateLeadInput, Lead, LeadStatus } from "./types/lead";
+import { CreateLeadInput, Lead, LeadInputPayload, LeadStatus } from "./types/lead";
 
 function App() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -33,8 +33,16 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
-  const handleCreate = async (input: CreateLeadInput) => {
-    const newLead = await createLead(input);
+  const handleCreate = async (input: LeadInputPayload) => {
+    const lead: CreateLeadInput = {
+      name: input.name,
+      email: input.email,
+      phone:
+        !input.ext || input.ext === ""
+          ? `+91 ${input.phone}`
+          : `${input.ext} ${input.phone}`,
+    };
+    const newLead = await createLead(lead);
     setLeads((prev) => [newLead, ...prev]);
   };
 

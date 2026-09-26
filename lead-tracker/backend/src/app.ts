@@ -1,6 +1,7 @@
 import express, { Application, NextFunction, Request, Response } from "express";
 import cors from "cors";
 import leadRoutes from "./routes/leadRoutes";
+import {migrate} from "../scripts/migrate";
 
 const app: Application = express();
 
@@ -10,6 +11,7 @@ app.use(
   })
 );
 app.use(express.json());
+//migrate();
 
 app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok" });

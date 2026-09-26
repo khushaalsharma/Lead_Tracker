@@ -6,8 +6,14 @@ import { Pool } from "pg";
 
 dotenv.config();
 
-async function migrate() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export async function migrate() {
+  const pool = new Pool({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,              // server hosting the DB
+    database: process.env.DB_NAME, 
+    password: process.env.DB_PASS,
+    port: 5432
+  });
   const migrationsDir = path.join(__dirname, "..", "migrations");
   const files = fs.readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
 

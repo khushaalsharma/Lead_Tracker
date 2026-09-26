@@ -22,3 +22,10 @@ export interface CreateLeadInput {
   email: string;
   phone: string;
 }
+
+export interface LeadInputPayload {
+  name: string;
+  email: string;
+  phone: string;
+  ext: string;
+}

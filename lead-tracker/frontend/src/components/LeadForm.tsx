@@ -1,18 +1,18 @@
 import { FormEvent, useState } from "react";
-import { CreateLeadInput } from "../types/lead";
+import { CreateLeadInput, LeadInputPayload } from "../types/lead";
 
 interface Props {
-  onSubmit: (input: CreateLeadInput) => Promise<void>;
+  onSubmit: (input: LeadInputPayload) => Promise<void>;
 }
 
-const EMPTY_FORM: CreateLeadInput = { name: "", email: "", phone: "" };
+const EMPTY_FORM: LeadInputPayload = { name: "", email: "", phone: "", ext: "" };
 
 function LeadForm({ onSubmit }: Props) {
-  const [form, setForm] = useState<CreateLeadInput>(EMPTY_FORM);
+  const [form, setForm] = useState<LeadInputPayload>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (field: keyof CreateLeadInput) => (
+  const handleChange = (field: keyof LeadInputPayload) => (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -23,8 +23,12 @@ function LeadForm({ onSubmit }: Props) {
     setError(null);
     setSubmitting(true);
     try {
-      await onSubmit(form);
-      setForm(EMPTY_FORM);
+      if(!form.phone || form.phone.length !== 10){
+        window.alert("Phone number must be 10 digits!");
+      }else{
+        await onSubmit(form);
+        setForm(EMPTY_FORM);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create lead");
     } finally {
@@ -59,12 +63,21 @@ function LeadForm({ onSubmit }: Props) {
           />
         </div>
         <div>
+          <label htmlFor="ext">Ext</label>
+          <input
+            id="ext"
+            value={form.ext}
+            onChange={handleChange("ext")}
+            placeholder="+91"
+          />
+        </div>
+        <div>
           <label htmlFor="phone">Phone</label>
           <input
             id="phone"
             value={form.phone}
             onChange={handleChange("phone")}
-            placeholder="+91 98765 43210"
+            placeholder="98765 43210"
             required
           />
         </div>
