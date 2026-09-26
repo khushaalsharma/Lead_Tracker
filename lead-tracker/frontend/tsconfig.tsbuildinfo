@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/api/leadApi.ts","./src/components/LeadForm.tsx","./src/components/LeadList.tsx","./src/components/LeadSearch.tsx","./src/components/StatusBadge.tsx","./src/types/lead.ts"],"version":"5.9.3"}
