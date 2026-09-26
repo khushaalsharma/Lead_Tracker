@@ -17,6 +17,13 @@ export interface Lead {
   created_at: string;
 }
 
+export interface PaginatedLeads {
+  leads: Lead[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface CreateLeadInput {
   name: string;
   email: string;

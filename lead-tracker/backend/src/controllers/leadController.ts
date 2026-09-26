@@ -3,9 +3,24 @@ import {
   createLead,
   getLeadById,
   listLeads,
-  searchLeads,
   updateLeadStatus,
 } from "../models/lead";
+
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 100;
+
+function positiveInteger(value: unknown, fallback: number, maximum?: number): number {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+  if (parsed < 1) {
+    return fallback;
+  }
+
+  return maximum ? Math.min(parsed, maximum) : parsed;
+}
 
 export async function handleCreateLead(
   req: Request,
@@ -26,11 +41,11 @@ export async function handleListLeads(
   next: NextFunction
 ): Promise<void> {
   try {
-    const { q } = req.query;
-    const leads =
-      typeof q === "string" && q.trim().length > 0
-        ? await searchLeads(q.trim())
-        : await listLeads();
+    const { q, page, pageSize } = req.query;
+    const currentPage = positiveInteger(page, 1);
+    const currentPageSize = positiveInteger(pageSize, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+    const query = typeof q === "string" && q.trim().length > 0 ? q.trim() : undefined;
+    const leads = await listLeads(currentPage, currentPageSize, query);
     res.json(leads);
   } catch (err) {
     next(err);

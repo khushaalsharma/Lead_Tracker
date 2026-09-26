@@ -6,7 +6,6 @@ jest.mock("../src/models/lead", () => {
     ...actual,
     createLead: jest.fn(),
     listLeads: jest.fn(),
-    searchLeads: jest.fn(),
     getLeadById: jest.fn(),
     updateLeadStatus: jest.fn(),
   };
@@ -65,25 +64,34 @@ describe("POST /api/leads", () => {
 });
 
 describe("GET /api/leads", () => {
-  it("lists all leads when no query is provided", async () => {
-    mockedModel.listLeads.mockResolvedValue([sampleLead as any]);
+  it("returns the first page of leads by default", async () => {
+    mockedModel.listLeads.mockResolvedValue({
+      leads: [sampleLead as any],
+      total: 1,
+      page: 1,
+      pageSize: 10,
+    });
 
     const res = await request(app).get("/api/leads");
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(mockedModel.listLeads).toHaveBeenCalledTimes(1);
-    expect(mockedModel.searchLeads).not.toHaveBeenCalled();
+    expect(res.body).toMatchObject({ total: 1, page: 1, pageSize: 10 });
+    expect(res.body.leads).toHaveLength(1);
+    expect(mockedModel.listLeads).toHaveBeenCalledWith(1, 10, undefined);
   });
 
-  it("searches leads when a query is provided", async () => {
-    mockedModel.searchLeads.mockResolvedValue([sampleLead as any]);
+  it("paginates search results", async () => {
+    mockedModel.listLeads.mockResolvedValue({
+      leads: [sampleLead as any],
+      total: 21,
+      page: 2,
+      pageSize: 10,
+    });
 
-    const res = await request(app).get("/api/leads?q=jane");
+    const res = await request(app).get("/api/leads?q=jane&page=2&pageSize=10");
 
     expect(res.status).toBe(200);
-    expect(mockedModel.searchLeads).toHaveBeenCalledWith("jane");
-    expect(mockedModel.listLeads).not.toHaveBeenCalled();
+    expect(mockedModel.listLeads).toHaveBeenCalledWith(2, 10, "jane");
   });
 });
 

@@ -5,18 +5,23 @@ import LeadSearch from "./components/LeadSearch";
 import { createLead, fetchLeads, updateLeadStatus } from "./api/leadApi";
 import { CreateLeadInput, Lead, LeadInputPayload, LeadStatus } from "./types/lead";
 
+const PAGE_SIZE = 10;
+
 function App() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
-  const loadLeads = async (query: string) => {
+  const loadLeads = async (query: string, requestedPage: number) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchLeads(query || undefined);
-      setLeads(data);
+      const data = await fetchLeads(requestedPage, PAGE_SIZE, query || undefined);
+      setLeads(data.leads);
+      setTotal(data.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load leads");
     } finally {
@@ -27,11 +32,16 @@ function App() {
   // Debounce search input so we don't hit the API on every keystroke.
   useEffect(() => {
     const timeout = setTimeout(() => {
-      loadLeads(search);
+      loadLeads(search, page);
     }, 300);
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, page]);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
 
   const handleCreate = async (input: LeadInputPayload) => {
     const lead: CreateLeadInput = {
@@ -42,8 +52,9 @@ function App() {
           ? `+91 ${input.phone}`
           : `${input.ext} ${input.phone}`,
     };
-    const newLead = await createLead(lead);
-    setLeads((prev) => [newLead, ...prev]);
+    await createLead(lead);
+    setPage(1);
+    await loadLeads(search, 1);
   };
 
   const handleStatusChange = async (id: string, status: LeadStatus) => {
@@ -68,9 +79,33 @@ function App() {
 
       <div className="card">
         <h2>Leads</h2>
-        <LeadSearch value={search} onChange={setSearch} />
+        <LeadSearch value={search} onChange={handleSearchChange} />
         {error && <div className="error-banner">{error}</div>}
         <LeadList leads={leads} loading={loading} onStatusChange={handleStatusChange} />
+        {!loading && (
+          <div className="pagination" aria-label="Lead pagination">
+            <span>
+              Showing {total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-
+              {Math.min(page * PAGE_SIZE, total)} of {total}
+            </span>
+            <div className="pagination-controls">
+              <button
+                type="button"
+                onClick={() => setPage((currentPage) => currentPage - 1)}
+                disabled={page === 1}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage((currentPage) => currentPage + 1)}
+                disabled={page * PAGE_SIZE >= total}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

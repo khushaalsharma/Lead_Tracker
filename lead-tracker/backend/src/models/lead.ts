@@ -18,6 +18,13 @@ export interface CreateLeadInput {
   status?: LeadStatus;
 }
 
+export interface PaginatedLeads {
+  leads: Lead[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export const LEAD_STATUSES: LeadStatus[] = [
   "NEW",
   "CONTACTED",
@@ -37,27 +44,44 @@ export async function createLead(input: CreateLeadInput): Promise<Lead> {
   return result.rows[0];
 }
 
-export async function listLeads(): Promise<Lead[]> {
-  const result = await pool.query<Lead>(
-    `SELECT id, name, email, phone, status, created_at
+export async function listLeads(
+  page: number,
+  pageSize: number,
+  query?: string
+): Promise<PaginatedLeads> {
+  const offset = (page - 1) * pageSize;
+  const searchTerm = query ? `%${query}%` : null;
+  const [leadsResult, countResult] = await Promise.all([
+    pool.query<Lead>(
+      `SELECT id, name, email, phone, status, created_at
      FROM leads
-     ORDER BY created_at DESC`
-  );
-  return result.rows;
-}
-
-export async function searchLeads(query: string): Promise<Lead[]> {
-  const result = await pool.query<Lead>(
-    `SELECT id, name, email, phone, status, created_at
-     FROM leads
-     WHERE LOWER(name) LIKE LOWER($1)
+     WHERE $1::text IS NULL
+        OR LOWER(name) LIKE LOWER($1)
         OR LOWER(email) LIKE LOWER($1)
         OR phone LIKE $1
         OR status::text = UPPER($2)
-     ORDER BY created_at DESC`,
-    [`%${query}%`, query]
-  );
-  return result.rows;
+     ORDER BY created_at DESC
+     LIMIT $3 OFFSET $4`,
+      [searchTerm, query ?? null, pageSize, offset]
+    ),
+    pool.query<{ total: string }>(
+      `SELECT COUNT(*) AS total
+       FROM leads
+       WHERE $1::text IS NULL
+          OR LOWER(name) LIKE LOWER($1)
+          OR LOWER(email) LIKE LOWER($1)
+          OR phone LIKE $1
+          OR status::text = UPPER($2)`,
+      [searchTerm, query ?? null]
+    ),
+  ]);
+
+  return {
+    leads: leadsResult.rows,
+    total: Number(countResult.rows[0].total),
+    page,
+    pageSize,
+  };
 }
 
 export async function getLeadById(id: string): Promise<Lead | null> {

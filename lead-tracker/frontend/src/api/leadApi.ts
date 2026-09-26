@@ -1,4 +1,4 @@
-import { CreateLeadInput, Lead, LeadStatus } from "../types/lead";
+import { CreateLeadInput, Lead, LeadStatus, PaginatedLeads } from "../types/lead";
 
 const API_BASE_URL =
   (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:4000/api";
@@ -13,12 +13,18 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json();
 }
 
-export async function fetchLeads(query?: string): Promise<Lead[]> {
-  const url = query
-    ? `${API_BASE_URL}/leads?q=${encodeURIComponent(query)}`
-    : `${API_BASE_URL}/leads`;
+export async function fetchLeads(
+  page: number,
+  pageSize: number,
+  query?: string
+): Promise<PaginatedLeads> {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (query) {
+    params.set("q", query);
+  }
+  const url = `${API_BASE_URL}/leads?${params.toString()}`;
   const res = await fetch(url);
-  return handleResponse<Lead[]>(res);
+  return handleResponse<PaginatedLeads>(res);
 }
 
 export async function createLead(input: CreateLeadInput): Promise<Lead> {
